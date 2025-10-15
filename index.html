@@ -1,1 +1,232 @@
+<!Doctype: HTML w/ Processing>
 
+<html>
+
+  <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Processing Demo</title>
+      <script type="text/javascript" src="js/processing.js"></script>
+  </head>
+  
+  <body>
+    <h1>PUT YOUR TITLE HERE</h1>
+    <p>ADD DESCRIPTION HERE</p>
+    
+    <script type="text/processing">
+    
+// 🌿 Organic Pixel Forest with Rain, Wind & Static Leaves (Processing Java Mode)
+// by ChatGPT (2025)
+
+int W = 900, H = 900;
+float noiseScale = 0.012;
+float t = 0;
+int mushroomCount = 100;
+int treeCount = 12;
+int pixelDots = 5000;
+int leafCount = 300;
+int rainDrops = 150;
+
+float windOffset = 0;
+
+// Rain drop class
+class Drop {
+  float x, y, speed, len, alpha;
+  boolean splashing = false;
+  float splashTime = 0;
+  
+  Drop() {
+    reset();
+  }
+  
+  void reset() {
+    x = random(width);
+    y = random(-height, 0);
+    speed = random(5, 10);
+    len = random(8, 15);
+    alpha = random(40, 80);
+    splashing = false;
+  }
+  
+  void update() {
+    if (!splashing) {
+      y += speed;
+      if (y > height - 10) {
+        splashing = true;
+        splashTime = 15;
+      }
+    } else {
+      splashTime -= 1;
+      alpha = map(splashTime, 15, 0, 60, 0);
+      if (splashTime <= 0) reset();
+    }
+  }
+  
+  void display() {
+    stroke(200, 10, 100, alpha);
+    if (!splashing) {
+      line(x, y, x, y + len);
+    } else {
+      noFill();
+      stroke(200, 10, 100, alpha);
+      ellipse(x, height - 5, map(splashTime, 15, 0, 4, 12), 2);
+    }
+  }
+}
+
+Drop[] drops = new Drop[rainDrops];
+PVector[] leafPositions = new PVector[leafCount];
+
+void setup() {
+  size(1300, 800);
+  smooth(8);
+  colorMode(HSB, 360, 100, 100, 100);
+  frameRate(30);
+  
+  // Initialize rain drops
+  for (int i = 0; i < rainDrops; i++) {
+    drops[i] = new Drop();
+  }
+
+  // Random static leaves
+  for (int i = 0; i < leafCount; i++) {
+    leafPositions[i] = new PVector(random(width), random(height));
+  }
+}
+
+void draw() {
+  background(0);
+  randomSeed(1234);
+  windOffset += 0.01;
+  t += 0.005;
+
+  drawMycelium();
+  drawGround();
+
+  // Mushrooms randomly distributed
+  for (int i = 0; i < mushroomCount; i++) {
+    float x = random(width);
+    float y = random(height * 0.2, height * 0.95);
+    drawMushroom(x, y, random(15, 50));
+  }
+
+  // Trees with gentle wind sway
+  for (int i = 0; i < treeCount; i++) {
+    float x = random(width);
+    float y = random(height * 0.6, height * 0.95);
+    drawTree(x, y, random(120, 260));
+  }
+
+  // Static random leaves
+  for (int i = 0; i < leafCount; i++) {
+    PVector p = leafPositions[i];
+    pushMatrix();
+    translate(p.x, p.y);
+    rotate(random(TWO_PI));
+    drawLeaf(random(8, 20));
+    popMatrix();
+  }
+
+  // Rain animation
+  for (Drop d : drops) {
+    d.update();
+    d.display();
+  }
+}
+
+// ---------- Elements ----------
+
+void drawMycelium() {
+  noStroke();
+  for (int i = 0; i < pixelDots; i++) {
+    float x = random(width);
+    float y = random(height);
+    float n = noise(x * noiseScale, y * noiseScale, t * 0.2);
+    float hue = map(n, 0, 1, 10, 30);
+    float sat = map(n, 0, 1, 50, 100);
+    float bright = map(n, 0, 1, 30, 100);
+    float alpha = map(n, 0, 1, 10, 90);
+    fill(hue, sat, bright, alpha);
+    if (random(1) < 0.7) ellipse(x, y, random(2, 4), random(2, 4));
+    else rect(x, y, 3, 3);
+  }
+}
+
+
+
+void drawMushroom(float x, float y, float s) {
+  pushMatrix();
+  translate(x, y);
+  noStroke();
+  float capHue = random(8, 28);
+  fill(capHue, 95, 92, 92);
+  ellipse(0, -s * 0.38, s, s * 0.5);
+  fill(40, 18, 95, 95);
+  rect(-s * 0.1, 0, s * 0.2, -s * 0.55, s * 0.05);
+  popMatrix();
+}
+
+void drawLeaf(float s) {
+  noStroke();
+  float hue = random(80, 150);
+  fill(hue, 70, 90, 95);
+  beginShape();
+  vertex(0, 0);
+  bezierVertex(s * 0.5, -s, s, 0, 0, s);
+  bezierVertex(-s, 0, -s * 0.5, -s, 0, 0);
+  endShape(CLOSE);
+}
+
+void drawTree(float x, float y, float h) {
+  pushMatrix();
+  translate(x, y);
+  float wind = (noise(x * 0.005, frameCount * 0.01) - 0.5) * 0.3;
+  rotate(wind);
+  stroke(30, 80, 60);
+  strokeWeight(6);
+  drawBranch(h, 7);
+  popMatrix();
+}
+
+void drawBranch(float len, int depth) {
+  if (len < 8 || depth <= 0) {
+    noStroke();
+    fill(30, 90, 50, 95);
+    ellipse(0, 0, 8, 4);
+    return;
+  }
+  float windBend = sin(frameCount * 0.01 + depth) * 0.05;
+  stroke(30, 80, 60);
+  strokeWeight(map(depth, 1, 7, 1.5, 5));
+  line(0, 0, 0, -len);
+  translate(0, -len);
+  pushMatrix();
+  rotate(radians(18 + random(-8, 8)) + windBend);
+  drawBranch(len * 0.72, depth - 1);
+  popMatrix();
+  pushMatrix();
+  rotate(radians(-18 + random(-8, 8)) + windBend);
+  drawBranch(len * 0.72, depth - 1);
+  popMatrix();
+}
+
+void drawGround() {
+  int cell = 6;
+  for (int gx = 0; gx < width; gx += cell) {
+    for (int gy = height / 2; gy < height; gy += cell) {
+      float n = noise(gx * 0.02, gy * 0.02, t * 0.08);
+      if (n > 0.6) {
+        float hue = map(n, 0.6, 1, 8, 26);
+        float sat = 92;
+        float bright = map(n, 0.6, 1, 40, 95);
+        fill(hue, sat, bright, 85);
+        rect(gx, gy, cell - 1, cell - 1);
+      }
+    }
+  }
+}
+    </script>
+    <canvas id="sketch" style="border: 1px solid black;"></canvas>
+    
+  </body>
+  
+</html>
